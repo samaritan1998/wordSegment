@@ -35,7 +35,7 @@ class dataProcess():
         #需要词表有词频。。需要去掉词频太低的;单词：序号;序号：单词;返回三个
         #得把训练集分出来。。8：2
         datas=self.data_clean()
-        data=datas[:len(datas)*0.8]
+        #data=datas[:len(datas)*0.8]
         wordDict={}
         for data in datas:
             for word in data:

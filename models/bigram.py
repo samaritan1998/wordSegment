@@ -17,7 +17,8 @@ class bigram():
         for data in self.datas:
             sLen=len(data)
             for i in range(1,sLen):
-                trans[self.word2ind[data[i-1]]][self.word2ind[data[i]]]+=1
+                if data[i-1] in self.wordDict and data[i] in self.wordDict:
+                    trans[self.word2ind[data[i-1]]][self.word2ind[data[i]]]+=1
         return trans
 
     #构建DAG图
@@ -38,11 +39,12 @@ class bigram():
             dag[k] = templist
         return dag
 
-    #计算最大概率,bigram的计算公式
-    def calc(self,sentence, DAG, route):
+    #计算最大概率,bigram的计算公式,加上laplace平滑，还没有evaluate
+    def calc(self,sentence):
         N = len(sentence)
-        route[N] = (0, 0)
-
+        route=[(0,0) for i in range(N+1)]
+        DAG=self.build_dag(sentence)
+        dictLen=len(self.wordDict)
         # 列表推倒求最大概率对数路径
         # route[idx] = max([ (概率对数，词语末字位置) for x in DAG[idx] ])
         # 以idx:(概率对数最大值，词语末字位置)键值对形式保存在route中
@@ -54,33 +56,22 @@ class bigram():
             for x in DAG[idx]:
                 now=sentence[idx:x+1]
                 then=sentence[x+1:route[x+1][1]]
-                route[idx] = [(log(trans[word2ind[now]][word2ind[then]])/log(sum(trans[word2ind[now]]))+ route[x + 1][0], x)]
+                if now in self.wordDict and then in self.wordDict:
+                    route[idx] = [((log(trans[word2ind[now]][word2ind[then]])+log(sum(trans[word2ind[now]])) or 1)+ route[x + 1][0], x)]
             route[idx] = max(route[idx])
-
+        return route
     #分词接口
-    def cut(self,sentence,route):
+    def cut(self,sentence):
         x = 0
         N = len(sentence)
-
-        buf = ''
-        while x < N:
-            y = route[x][1] + 1
-            l_word = sentence[x:y]
-            # 使用re_eng 来判断当前的词是否为字母或数字
-            re_eng = re.compile('[a-zA-Z0-9]', re.U)
-            if re_eng.match(l_word) and len(l_word) == 1:
-                buf += l_word
-                x = y
-            else:
-                if buf:
-                    yield buf
-                    buf = ''
-                yield l_word
-                x = y
-        if buf:
-            yield buf
-            buf = ''
-
+        route=self.calc(sentence)
+        words=[]
+        pre=0
+        for i in range(len(route)):
+            next = route[i][1]
+            words.append(sentence[pre:next+1])
+            pre=next+1
+        return words
 
 
 
